@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: linguanest-api-dev
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: linguanest-api-prod
+# TODO: this namespace isn't used anywhere else yet - configmap.yaml, deployment.yaml,
+# and service.yaml only have linguanest-api-dev versions so far. Duplicate those into
+# linguanest-api-prod copies before deploying to prod.
