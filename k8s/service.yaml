@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: linguanest-api
+  namespace: linguanest-api-dev
+spec:
+  selector:
+    app: linguanest-api
+  ports:
+    - port: 80
+      targetPort: 8080
+  # ClusterIP is internal-only - nothing outside the cluster can reach this yet.
+  # TODO: add an Ingress resource (k8s/ingress.yaml, not yet created) in front of
+  # this Service to expose it externally (e.g. via the AWS Load Balancer Controller on EKS).
+  type: ClusterIP
