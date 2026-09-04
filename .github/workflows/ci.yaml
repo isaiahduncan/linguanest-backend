@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # Runner starts with no repo at all - this clones it at the exact commit
+      # that triggered the run so later steps have files to work with.
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Installs a JDK only - not Maven. mvnw bootstraps its own pinned Maven
+      # version on first run, independent of this step. The JDK itself isn't
+      # cached here since GitHub's runners usually already have common JDKs
+      # pre-baked into the VM image, and it's a single-file download even on
+      # a cache miss.
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          # Wires up two things around wherever Maven actually runs in this
+          # job, keyed on a hash of pom.xml:
+          #   - restore, right here, before "Run tests" - downloads any
+          #     previously saved ~/.m2/repository so Maven finds dependency
+          #     jars already on disk instead of fetching them from Maven
+          #     Central.
+          #   - save, automatically after the job's last step - re-uploads
+          #     ~/.m2/repository so the *next* run has something to restore.
+          # If pom.xml changes, the hash changes, so it's a cache miss and
+          # Maven falls back to fetching fresh - then that becomes the new
+          # cache.
+          cache: maven
+
+      - name: Run tests
+        run: ./mvnw -B clean verify

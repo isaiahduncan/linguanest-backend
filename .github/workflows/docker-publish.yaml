@@ -1,0 +1,69 @@
+name: docker-publish
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  # github.repository is implicit - GitHub Actions provides it automatically
+  # for every run, no need to pass it in. Resolves to "<owner>/<repo>", e.g.
+  # isaiahduncan/linguanest-backend.
+  IMAGE_NAME: ${{ github.repository }}
+
+# Explicitly scopes what the auto-generated GITHUB_TOKEN can do this run,
+# rather than relying on whatever the repo/org's default happens to be:
+# contents: read  - lets actions/checkout clone the repo
+# packages: write - lets us push images to GHCR with this token
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Authenticates to GHCR using the auto-generated GITHUB_TOKEN - no
+      # separately created secret needed. github.actor is also implicit
+      # (the user/context that triggered this run).
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Resolves the tag rules below into actual tag strings for this run
+      # (e.g. ghcr.io/.../linguanest-backend:sha-a1b2c3d using the short git
+      # commit SHA, plus :latest) and exposes them as steps.meta.outputs.tags
+      # for the build step to consume. Also generates OCI labels (source repo,
+      # commit revision, build time) baked into the image itself.
+      - name: Extract image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest
+
+      # Sets up Docker's BuildKit-based builder on the runner. Not load-bearing
+      # for this simple single-platform build/push yet, but it's the standard
+      # companion to build-push-action (enables layer caching and multi-arch
+      # builds later if ever needed).
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # TODO: add `id: build` here once deploy.yaml exists, so a future
+      # workflow_call from this workflow can pass this step's outputs (e.g.
+      # the image digest) forward as an input to the deploy job.
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
