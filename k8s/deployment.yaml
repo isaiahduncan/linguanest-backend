@@ -19,11 +19,7 @@ spec:
       # (e.g. GHCR) - required for the cluster to authenticate the pull.
       containers:
         - name: linguanest-api
-          # TODO: this image hasn't actually been built/pushed anywhere yet - no
-          # registry push has happened and no CI pipeline exists to produce it, so
-          # this reference won't resolve until an image lands in a real registry
-          # under this name/tag.
-          image: linguanest-backend:latest
+          image: ghcr.io/isaiahduncan/linguanest-backend:sha-f0e9725
           ports:
             - containerPort: 8080
           envFrom:
