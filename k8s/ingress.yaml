@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: linguanest-api
+  namespace: linguanest-api-dev
+  annotations:
+    # These two annotations only mean anything once the AWS Load Balancer
+    # Controller is installed in the cluster - it's what actually watches
+    # Ingress resources and provisions a real ALB from them. Not installed
+    # anywhere yet since no EKS cluster is provisioned.
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: linguanest-api
+                port:
+                  number: 80
+# TODO: no host set on the rule above, so this matches any hostname - there's
+# no real domain/DNS set up for this project yet. Add a host once one exists.
+# TODO: no TLS block - HTTP only for now.
