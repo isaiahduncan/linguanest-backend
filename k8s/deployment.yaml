@@ -19,11 +19,11 @@ spec:
       # (e.g. GHCR) - required for the cluster to authenticate the pull.
       containers:
         - name: linguanest-api
-          # TODO: this image hasn't actually been built/pushed anywhere yet - no
-          # registry push has happened and no CI pipeline exists to produce it, so
-          # this reference won't resolve until an image lands in a real registry
-          # under this name/tag.
-          image: linguanest-backend:latest
+          # __IMAGE_TAG__ is a placeholder, not a real tag - deploy.yaml (not
+          # yet created) substitutes the real tag in here at deploy time. This
+          # file is never applied as-is; the substitution happens in that
+          # job's own checkout and is never committed back.
+          image: ghcr.io/isaiahduncan/linguanest-backend:__IMAGE_TAG__
           ports:
             - containerPort: 8080
           envFrom:
