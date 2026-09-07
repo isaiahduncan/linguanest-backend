@@ -2,7 +2,8 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: linguanest-api
-  namespace: linguanest-api-dev
+  # namespace intentionally omitted - each environment's overlay sets it via
+  # kustomization.yaml's `namespace:` field (see overlays/dev/kustomization.yaml).
   annotations:
     # These two annotations only mean anything once the AWS Load Balancer
     # Controller is installed in the cluster - it's what actually watches

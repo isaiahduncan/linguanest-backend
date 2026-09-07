@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  # namespace intentionally omitted - each environment's overlay sets it via
+  # kustomization.yaml's `namespace:` field (see overlays/dev/kustomization.yaml).
+data:
+  SERVER_PORT: "8080"
+  # SPRING_PROFILES_ACTIVE intentionally omitted - its value literally names
+  # the environment, so every overlay (including dev) patches it in explicitly
+  # rather than one environment inheriting an implicit default from here.

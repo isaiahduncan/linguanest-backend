@@ -2,6 +2,14 @@ spring:
   application:
     name: backend
   profiles:
+    # 1. This env var is first defined in the ConfigMap named "backend-config"
+    #    (each environment's Kustomize overlay patches its value in).
+    # 2. deployment.yaml's envFrom -> configMapRef -> name: backend-config
+    #    takes every key in that ConfigMap and sets it as a container env var.
+    # 3. Java/Spring reads all environment variables automatically.
+    # 4. Below, Spring looks for one named SPRING_PROFILES_ACTIVE specifically -
+    #    if it wasn't set (no ConfigMap/env var reached this process at all),
+    #    it falls back to the default after the colon ("dev").
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
 server:

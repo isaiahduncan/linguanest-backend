@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: linguanest-api
+  # namespace intentionally omitted - each environment's overlay sets it via
+  # kustomization.yaml's `namespace:` field (see overlays/dev/kustomization.yaml).
+spec:
+  selector:
+    app: linguanest-api
+  ports:
+    - port: 80
+      targetPort: 8080
+  # ClusterIP is internal-only - k8s/base/ingress.yaml is what exposes this
+  # externally, via the AWS Load Balancer Controller on EKS.
+  type: ClusterIP

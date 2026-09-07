@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base
+  - namespace.yaml
+
+namespace: linguanest-api-dev
+
+# No images: block committed here - deploy.yaml runs `kustomize edit set
+# image` at deploy time to set the real tag, in its own ephemeral checkout,
+# never committed back. No real tag is ever committed to git.
+
+patches:
+  - target:
+      kind: ConfigMap
+      name: backend-config
+    patch: |-
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: backend-config
+      data:
+        SPRING_PROFILES_ACTIVE: dev
