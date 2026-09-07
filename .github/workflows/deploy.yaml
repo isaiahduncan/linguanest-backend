@@ -1,0 +1,61 @@
+name: deploy
+
+on:
+  # Fires automatically once docker-publish.yaml succeeds.
+  workflow_run:
+    workflows: ["docker-publish"]
+    types: [completed]
+  # Lets a specific tag be deployed manually - e.g. to redeploy an older,
+  # known-good build, independent of whatever main's latest commit is.
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (e.g. sha-a1b2c3d)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-dev:
+    # Only proceed on a successful upstream build, or any manual run.
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    # Gates the job behind the dev GitHub Environment's requirements (e.g.
+    # reviewers). No steps below run if the gate isn't passed.
+    environment: dev
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Same tagging convention docker-publish.yaml uses (sha-<short-sha>),
+      # recomputed here rather than passed between the two workflow files.
+      - name: Resolve image tag
+        id: resolve
+        run: |
+          if [ -n "${{ inputs.image_tag }}" ]; then
+            echo "tag=${{ inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=sha-$(echo ${{ github.event.workflow_run.head_sha }} | cut -c1-7)" >> "$GITHUB_OUTPUT"
+          fi
+
+      # kubectl's read/apply support for Kustomize is bundled in, but the
+      # `edit` subcommand used below isn't - this installs the standalone
+      # kustomize CLI via its own project's official install script.
+      - name: Install kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+
+      # TODO: configure cluster access here (e.g. aws-actions/configure-aws-credentials
+      # + `aws eks update-kubeconfig`) before `kubectl apply` below can reach
+      # anything. No EKS cluster exists yet, and no credentials are stored as
+      # secrets - this step is a placeholder until both of those exist.
+
+      - name: Set image tag for this deploy
+        working-directory: k8s/overlays/dev
+        run: kustomize edit set image ghcr.io/isaiahduncan/linguanest-backend=ghcr.io/isaiahduncan/linguanest-backend:${{ steps.resolve.outputs.tag }}
+
+      - name: Apply manifests
+        run: kubectl apply -k k8s/overlays/dev

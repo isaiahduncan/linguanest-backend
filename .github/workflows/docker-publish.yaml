@@ -57,9 +57,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # TODO: add `id: build` here once deploy.yaml exists, so a future
-      # workflow_call from this workflow can pass this step's outputs (e.g.
-      # the image digest) forward as an input to the deploy job.
       - name: Build and push image
         uses: docker/build-push-action@v6
         with:
