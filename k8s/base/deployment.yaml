@@ -2,10 +2,15 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: linguanest-api
-  namespace: linguanest-api-dev
+  # namespace intentionally omitted - each environment's overlay sets it via
+  # kustomization.yaml's `namespace:` field (see overlays/dev/kustomization.yaml).
   labels:
     app: linguanest-api
 spec:
+  # replicas and the resources block below are sizing knobs, not identity -
+  # they get a sensible low default here, and only environments needing more
+  # (e.g. prod) patch them upward. Unlike SPRING_PROFILES_ACTIVE, dev doesn't
+  # need to patch these since this default already suits it.
   replicas: 2
   selector:
     matchLabels:
@@ -15,15 +20,12 @@ spec:
       labels:
         app: linguanest-api
     spec:
-      # TODO: add imagePullSecrets here once the image lives in a private registry
-      # (e.g. GHCR) - required for the cluster to authenticate the pull.
       containers:
         - name: linguanest-api
-          # TODO: this image hasn't actually been built/pushed anywhere yet - no
-          # registry push has happened and no CI pipeline exists to produce it, so
-          # this reference won't resolve until an image lands in a real registry
-          # under this name/tag.
-          image: linguanest-backend:latest
+          # No tag here on purpose - every overlay's `kustomize edit set image`
+          # step (run by deploy.yaml at deploy time, not committed) overwrites
+          # this. This bare reference is never meant to be applied as-is.
+          image: ghcr.io/isaiahduncan/linguanest-backend
           ports:
             - containerPort: 8080
           envFrom:
