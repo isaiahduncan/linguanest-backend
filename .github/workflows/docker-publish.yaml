@@ -57,10 +57,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # id lets a future deploy.yaml, called via workflow_call, reference this
-      # step's outputs (e.g. steps.build.outputs.digest) as an input.
       - name: Build and push image
-        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
