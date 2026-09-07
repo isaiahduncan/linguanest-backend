@@ -1,10 +1,7 @@
 name: deploy
 
 on:
-  # Fires automatically once docker-publish.yaml succeeds. workflow_run only
-  # gives us metadata about that run (like head_sha) - not its internal step
-  # outputs - so the image tag below is recomputed independently rather than
-  # read from docker-publish.yaml. See "Resolve image tag" below.
+  # Fires automatically once docker-publish.yaml succeeds.
   workflow_run:
     workflows: ["docker-publish"]
     types: [completed]
@@ -25,11 +22,8 @@ jobs:
     # Only proceed on a successful upstream build, or any manual run.
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-    # Gates this job behind the "dev" GitHub Environment's required reviewers
-    # (Settings > Environments > dev) - nothing below runs until approved,
-    # regardless of whether this run was triggered automatically or manually.
-    # The environment needs to actually be configured with reviewers in repo
-    # settings for this to gate anything; referencing it here alone doesn't.
+    # Gates the job behind the dev GitHub Environment's requirements (e.g.
+    # reviewers). No steps below run if the gate isn't passed.
     environment: dev
     steps:
       - name: Checkout
