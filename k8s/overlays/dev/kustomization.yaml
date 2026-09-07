@@ -7,11 +7,9 @@ resources:
 
 namespace: linguanest-api-dev
 
-# No images: block committed here - deploy.yaml (not yet created) will run
-# `kustomize edit set image` at deploy time to set the real tag, in its own
-# ephemeral checkout, never committed back. This mirrors how the old
-# __IMAGE_TAG__ placeholder approach worked before this Kustomize migration -
-# no real tag is ever committed to git.
+# No images: block committed here - deploy.yaml runs `kustomize edit set
+# image` at deploy time to set the real tag, in its own ephemeral checkout,
+# never committed back. No real tag is ever committed to git.
 
 patches:
   - target:
