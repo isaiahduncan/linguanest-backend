@@ -1,6 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+# These files are here, and only here, because this list says so - listing
+# a file under resources: is what makes it "part of base," bundled together
+# as one unit for every overlay's `resources: [../../base]` to pull in.
 resources:
   - configmap.yaml
   - deployment.yaml
