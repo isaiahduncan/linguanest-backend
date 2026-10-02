@@ -1,12 +1,12 @@
-package com.linguanest.backend.exercise;
+package com.linguanest.backend.chat;
 
 import java.time.Instant;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
-import com.linguanest.backend.chat.Chat;
 import com.linguanest.backend.user.User;
 
 import jakarta.persistence.Column;
@@ -21,38 +21,33 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * One specific worksheet instance given to one specific user, in one specific chat.
- *
- * <p>{@code userId} is a deliberate, acceptable redundancy with {@code chat.userId} - kept
- * directly on this table to avoid a join for "get all exercises for user X" (see
- * backend-api-spec.md).
+ * Groups a sequence of {@link com.linguanest.backend.exercise.Exercise Exercise}s into a
+ * conversation thread for the chat-list/chat-detail mobile UI. Purely a UI/UX grouping construct -
+ * holds no exercise content or grading logic itself.
  */
 @Entity
-@Table(name = "exercises")
+@Table(name = "chats")
 @Getter
 @Setter
 @NoArgsConstructor
-public class Exercise {
+public class Chat {
 
     @Id
     @UuidGenerator
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "chat_id")
-    private Chat chat;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
-    @Column(name = "language", length = 50, nullable = false)
-    private String language;
-
-    @Column(name = "topic", length = 255, nullable = false)
-    private String topic;
+    @Column(name = "title", length = 255)
+    private String title;
 
     @CreationTimestamp
     @Column(name = "created_at")
     private Instant createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private Instant updatedAt;
 }

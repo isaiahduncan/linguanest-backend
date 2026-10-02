@@ -1,13 +1,11 @@
 package com.linguanest.backend.exercise;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.UUID;
 
-public interface ExerciseRepository {
+import org.springframework.data.jpa.repository.JpaRepository;
 
-    List<Exercise> findAll();
+public interface ExerciseRepository extends JpaRepository<Exercise, UUID> {
 
-    Optional<Exercise> findById(String id);
-
-    Exercise save(Exercise exercise);
+    List<Exercise> findByChatIdOrderByCreatedAtAsc(UUID chatId);
 }
