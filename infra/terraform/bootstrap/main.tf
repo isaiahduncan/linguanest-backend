@@ -40,6 +40,13 @@ resource "aws_s3_bucket" "terraform_state" {
     Purpose   = "terraform-remote-state"
     ManagedBy = "terraform-bootstrap"
   }
+
+  # Guards against `terraform destroy` run in this directory by mistake --
+  # without this, destroying this config wipes the state history every
+  # other Terraform config in this project depends on.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Versioning so a bad/corrupt state write can be recovered by rolling back
@@ -97,5 +104,11 @@ resource "aws_dynamodb_table" "terraform_locks" {
     Project   = "linguanest"
     Purpose   = "terraform-state-locking"
     ManagedBy = "terraform-bootstrap"
+  }
+
+  # Same reasoning as the S3 bucket's lifecycle block above -- an accidental
+  # destroy here disrupts locking for anyone applying at the time.
+  lifecycle {
+    prevent_destroy = true
   }
 }
