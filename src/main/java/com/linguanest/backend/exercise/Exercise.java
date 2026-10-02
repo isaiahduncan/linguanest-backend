@@ -1,18 +1,12 @@
 package com.linguanest.backend.exercise;
 
-import java.time.Instant;
-import java.util.UUID;
-
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UuidGenerator;
-
 import com.linguanest.backend.chat.Chat;
+import com.linguanest.backend.common.BaseEntity;
 import com.linguanest.backend.user.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -32,11 +26,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Exercise {
-
-    @Id
-    @UuidGenerator
-    private UUID id;
+public class Exercise extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_id")
@@ -51,8 +41,4 @@ public class Exercise {
 
     @Column(name = "topic", length = 255, nullable = false)
     private String topic;
-
-    @CreationTimestamp
-    @Column(name = "created_at")
-    private Instant createdAt;
 }

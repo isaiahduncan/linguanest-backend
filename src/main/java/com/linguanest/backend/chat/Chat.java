@@ -1,18 +1,15 @@
 package com.linguanest.backend.chat;
 
 import java.time.Instant;
-import java.util.UUID;
 
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.hibernate.annotations.UuidGenerator;
 
+import com.linguanest.backend.common.BaseEntity;
 import com.linguanest.backend.user.User;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -30,11 +27,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Chat {
-
-    @Id
-    @UuidGenerator
-    private UUID id;
+public class Chat extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -42,10 +35,6 @@ public class Chat {
 
     @Column(name = "title", length = 255)
     private String title;
-
-    @CreationTimestamp
-    @Column(name = "created_at")
-    private Instant createdAt;
 
     @UpdateTimestamp
     @Column(name = "updated_at")

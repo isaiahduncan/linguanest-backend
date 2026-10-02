@@ -10,7 +10,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -101,7 +100,7 @@ class ChatServiceTest {
     @Test
     void getMessagesThrowsWhenTheChatDoesNotExist() {
         UUID missingChatId = UUID.randomUUID();
-        when(chatRepository.findById(missingChatId)).thenReturn(Optional.empty());
+        when(chatRepository.existsByIdAndUserId(missingChatId, PresumedUser.ID)).thenReturn(false);
 
         assertThatThrownBy(() -> chatService.getMessages(missingChatId))
                 .isInstanceOf(ChatNotFoundException.class);
@@ -110,7 +109,7 @@ class ChatServiceTest {
     @Test
     void getMessagesReturnsAnEmptyTimelineWhenTheChatHasNoExercisesYet() {
         UUID chatId = UUID.randomUUID();
-        when(chatRepository.findById(chatId)).thenReturn(Optional.of(new Chat()));
+        when(chatRepository.existsByIdAndUserId(chatId, PresumedUser.ID)).thenReturn(true);
         when(exerciseRepository.findByChatIdOrderByCreatedAtAsc(chatId)).thenReturn(List.of());
 
         ChatMessagesResponse result = chatService.getMessages(chatId);
@@ -122,7 +121,7 @@ class ChatServiceTest {
     @Test
     void getMessagesMergesExercisesQuestionsSubmissionsAndGradedResultsInChronologicalOrder() {
         UUID chatId = UUID.randomUUID();
-        when(chatRepository.findById(chatId)).thenReturn(Optional.of(new Chat()));
+        when(chatRepository.existsByIdAndUserId(chatId, PresumedUser.ID)).thenReturn(true);
 
         Instant t0 = Instant.now().minus(10, ChronoUnit.MINUTES);
 
@@ -174,5 +173,59 @@ class ChatServiceTest {
         SubmissionTimelineEntry submissionEntry = (SubmissionTimelineEntry) result.messages().get(1);
         assertThat(submissionEntry.gradedResult()).isNotNull();
         assertThat(submissionEntry.gradedResult().overallScore()).isEqualTo(100);
+    }
+
+    @Test
+    void getMessagesKeepsTheMostRecentGradedResultWhenASubmissionWasRegraded() {
+        // graded_results.submission_id has no UNIQUE constraint (see backend-api-spec.md Open
+        // Items), so a regrade leaves two rows for one submission. Collectors.toMap throws on a
+        // duplicate key without a merge function - this is the regression test for that fix.
+        UUID chatId = UUID.randomUUID();
+        when(chatRepository.existsByIdAndUserId(chatId, PresumedUser.ID)).thenReturn(true);
+
+        Instant t0 = Instant.now().minus(10, ChronoUnit.MINUTES);
+
+        Exercise exercise = new Exercise();
+        exercise.setId(UUID.randomUUID());
+        exercise.setLanguage("es");
+        exercise.setTopic("past tense subjunctive");
+        exercise.setCreatedAt(t0);
+        when(exerciseRepository.findByChatIdOrderByCreatedAtAsc(chatId)).thenReturn(List.of(exercise));
+        when(questionRepository.findByExerciseIdInOrderByQuestionNumberAsc(List.of(exercise.getId())))
+                .thenReturn(List.of());
+
+        Submission submission = new Submission();
+        submission.setId(UUID.randomUUID());
+        submission.setExercise(exercise);
+        submission.setSubmissionType(SubmissionType.TEXT);
+        submission.setStatus(SubmissionStatus.GRADED);
+        submission.setCreatedAt(t0.plus(1, ChronoUnit.MINUTES));
+        when(submissionRepository.findByExerciseIdInOrderByCreatedAtAsc(List.of(exercise.getId())))
+                .thenReturn(List.of(submission));
+
+        GradedResult firstAttempt = new GradedResult();
+        firstAttempt.setId(UUID.randomUUID());
+        firstAttempt.setSubmission(submission);
+        firstAttempt.setOverallScore(60);
+        firstAttempt.setFeedbackMarkdown("First pass");
+        firstAttempt.setDetailedCorrections(Map.of());
+        firstAttempt.setCreatedAt(t0.plus(2, ChronoUnit.MINUTES));
+
+        GradedResult regrade = new GradedResult();
+        regrade.setId(UUID.randomUUID());
+        regrade.setSubmission(submission);
+        regrade.setOverallScore(95);
+        regrade.setFeedbackMarkdown("Regraded - missed this the first time");
+        regrade.setDetailedCorrections(Map.of());
+        regrade.setCreatedAt(t0.plus(3, ChronoUnit.MINUTES));
+
+        when(gradedResultRepository.findBySubmissionIdIn(List.of(submission.getId())))
+                .thenReturn(List.of(firstAttempt, regrade));
+
+        ChatMessagesResponse result = chatService.getMessages(chatId);
+
+        // index 1, not 0: the exercise (createdAt t0) sorts before the submission (t0+1min).
+        SubmissionTimelineEntry submissionEntry = (SubmissionTimelineEntry) result.messages().get(1);
+        assertThat(submissionEntry.gradedResult().overallScore()).isEqualTo(95);
     }
 }

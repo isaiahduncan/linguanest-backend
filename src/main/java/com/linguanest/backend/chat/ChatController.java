@@ -25,7 +25,10 @@ class ChatController {
     ResponseEntity<ChatSummary> createChat(@RequestBody(required = false) CreateChatRequest request) {
         String title = request != null ? request.title() : null;
         ChatSummary created = chatService.createChat(title);
-        return ResponseEntity.created(URI.create("/chats/" + created.id())).body(created);
+        // Points at /messages, not a bare /chats/{id} - there's no GET mapping for the latter
+        // (only POST /chats, GET /chats, and GET /chats/{chatId}/messages exist), so a client
+        // following this Location header would otherwise get a 404 on standard REST behavior.
+        return ResponseEntity.created(URI.create("/chats/" + created.id() + "/messages")).body(created);
     }
 
     @GetMapping

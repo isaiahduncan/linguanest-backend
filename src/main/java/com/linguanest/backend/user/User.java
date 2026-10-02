@@ -1,14 +1,9 @@
 package com.linguanest.backend.user;
 
-import java.time.Instant;
-import java.util.UUID;
-
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UuidGenerator;
+import com.linguanest.backend.common.BaseEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,19 +19,11 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class User {
-
-    @Id
-    @UuidGenerator
-    private UUID id;
+public class User extends BaseEntity {
 
     @Column(name = "email", length = 255, unique = true)
     private String email;
 
     @Column(name = "password_hash", length = 255)
     private String passwordHash;
-
-    @CreationTimestamp
-    @Column(name = "created_at")
-    private Instant createdAt;
 }

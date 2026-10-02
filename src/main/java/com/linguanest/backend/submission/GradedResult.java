@@ -1,18 +1,15 @@
 package com.linguanest.backend.submission;
 
-import java.time.Instant;
 import java.util.Map;
-import java.util.UUID;
 
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
+
+import com.linguanest.backend.common.BaseEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -36,11 +33,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class GradedResult {
-
-    @Id
-    @UuidGenerator
-    private UUID id;
+public class GradedResult extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "submission_id")
@@ -55,8 +48,4 @@ public class GradedResult {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "detailed_corrections", nullable = false, columnDefinition = "jsonb")
     private Map<String, Object> detailedCorrections;
-
-    @CreationTimestamp
-    @Column(name = "created_at")
-    private Instant createdAt;
 }
