@@ -9,20 +9,27 @@ Java/Spring Boot API for AI-generated language exercises and multimodal grading,
 
 ## Running locally
 
+Needs a Postgres instance reachable at `spring.datasource.url` (defaults to
+`jdbc:postgresql://localhost:5432/linguanest`, overridable via the `DB_URL`/`DB_USERNAME`/`DB_PASSWORD`
+env vars) — Flyway migrations (`src/main/resources/db/migration`) run against it on startup, and
+`spring.jpa.hibernate.ddl-auto=validate` means the app won't start if the schema is missing or out of sync.
+
 ```bash
 ./mvnw spring-boot:run
 ```
 
 The app starts on `http://localhost:8080`. Health check: `GET /actuator/health`.
 
-Example API, demonstrating the controller → service → repository DI chain (`src/main/java/com/linguanest/backend/exercise`):
+Example API, demonstrating the controller → service → repository DI chain (`src/main/java/com/linguanest/backend/chat`):
 
 ```bash
-curl -X POST localhost:8080/api/exercises \
+curl -X POST localhost:8080/chats \
   -H 'Content-Type: application/json' \
-  -d '{"language":"es","prompt":"Translate '\''hello'\''","difficulty":"BEGINNER"}'
+  -d '{"title":"Spanish practice"}'
 
-curl localhost:8080/api/exercises
+curl localhost:8080/chats
+
+curl localhost:8080/chats/<chatId>/messages
 ```
 
 ## Tests
