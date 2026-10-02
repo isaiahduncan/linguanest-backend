@@ -21,15 +21,39 @@ permissions:
 jobs:
   apply:
     runs-on: ubuntu-latest
+    # Gates the actual `terraform apply` behind required reviewers - this is
+    # the riskier operation (real, costly, sometimes destroy/recreate cloud
+    # resources) in the whole pipeline, and previously had weaker gating than
+    # the kubectl apply it feeds into (which already uses the dev Environment
+    # on deploy.yaml). Create this Environment in repo Settings with required
+    # reviewers, same as dev, or this doesn't actually gate anything.
+    environment: infra
     defaults:
       run:
         working-directory: infra/terraform
+    # TF_VAR_aws_region feeds Terraform's own var.aws_region (provider.tf) -
+    # previously only the credentials step below got vars.AWS_REGION, so
+    # changing that repo Variable would silently move where credentials
+    # authenticate without moving where Terraform actually provisions
+    # anything (it would stay on var.aws_region's hardcoded default).
+    env:
+      TF_VAR_aws_region: ${{ vars.AWS_REGION }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
+
+      # Caches downloaded provider plugins (hashicorp/aws is tens of MB)
+      # between runs, keyed on the lock file - without this, every run
+      # re-downloads them from the registry from scratch, the same gap
+      # ci.yaml's Maven dependency caching closes for the build.
+      - name: Cache Terraform providers
+        uses: actions/cache@v4
+        with:
+          path: infra/terraform/.terraform/providers
+          key: ${{ runner.os }}-terraform-providers-${{ hashFiles('infra/terraform/.terraform.lock.hcl') }}
 
       # One-time manual prerequisite, not created by this workflow: an IAM
       # role that trusts token.actions.githubusercontent.com, scoped (via
@@ -61,12 +85,10 @@ jobs:
       - name: Terraform plan
         run: terraform plan -input=false -out=tfplan
 
-      # No interactive approval gate here, unlike a human running `terraform
-      # apply` locally and reviewing the plan first - workflow_call has no
-      # equivalent pause-for-approval step. The dev GitHub Environment on
-      # deploy.yaml's deploy-dev job is a reviewer gate for the k8s apply,
-      # but this terraform job runs before that gate, unattended. Acceptable
-      # tradeoff for a small Phase 1 POC; worth adding a required-reviewers
-      # Environment on this job too before real prod data is ever at stake.
+      # `-auto-approve` because this job's own `environment: infra` gate
+      # above (required reviewers) is what stands in for the interactive
+      # approval a human running `terraform apply` locally would get from
+      # reviewing the plan themselves - the plan already ran and the gate
+      # already passed by the time this step executes.
       - name: Terraform apply
         run: terraform apply -input=false -auto-approve tfplan

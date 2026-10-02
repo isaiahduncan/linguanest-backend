@@ -4,6 +4,15 @@
 # gets populated from `terraform output -raw rds_password` after apply; it
 # only lives in Terraform state (in S3, same as everything else here) and
 # this output, never committed to git.
+#
+# This module supports `manage_master_user_password = true` instead - an
+# AWS-managed, auto-rotated Secrets Manager secret, never exposed as a
+# plaintext Terraform output at all. Deliberately not used yet: the spec's
+# Kubernetes Setup section explicitly calls a plain K8s Secret "sufficient
+# for the POC" and names Secrets Manager + the Secrets Store CSI driver as a
+# later upgrade, not a Phase 1 requirement - switching now would need that
+# CSI driver wired up before the app could read the password at all, which
+# is exactly the work the spec defers. Revisit together when that happens.
 resource "random_password" "rds_master" {
   length  = 20
   special = false

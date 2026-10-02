@@ -31,8 +31,9 @@ module "vpc" {
   single_nat_gateway     = true
   one_nat_gateway_per_az = false
 
-  enable_dns_hostnames = true
-  enable_dns_support   = true
+  # No explicit enable_dns_hostnames/enable_dns_support here - both already
+  # default to true in this module version; setting them again changes
+  # nothing and just invites a future reader to go check the module source.
 
   # Required so EKS and the AWS Load Balancer Controller can auto-discover
   # which subnets to place internal vs. internet-facing ELBs/ALBs into.

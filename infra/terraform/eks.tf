@@ -13,12 +13,27 @@ module "eks" {
   # The node group below still only schedules into one of them; multi-AZ
   # *node* distribution is explicitly a Phase 2 concern, not needed here.
 
+  # Public (not restricted to a CIDR list) because the pipeline that will
+  # eventually run `kubectl apply` is a GitHub-hosted Actions runner, not
+  # inside this VPC, with no stable IP range to restrict access to - unlike
+  # the RDS security group below, there's no fixed source to allow-list here.
+  # Revisit if a self-hosted runner inside the VPC (or a VPN/peering setup)
+  # ever replaces GitHub-hosted runners for the kubectl step.
   cluster_endpoint_public_access = true
 
   # Creates the cluster's OIDC identity provider and is required for any
   # IRSA role (e.g. the LB controller role below) to trust this cluster's
   # service accounts.
   enable_irsa = true
+
+  # Without this, NO IAM principal has Kubernetes RBAC access to the
+  # cluster this creates - not even the OIDC role this same pipeline
+  # authenticates as, since v20 of this module defaults that to false. Grants
+  # whichever principal actually runs `terraform apply` (our OIDC role)
+  # cluster-admin access, so the deploy pipeline's own `kubectl apply` TODO
+  # and manually Helm-installing the AWS Load Balancer Controller both have
+  # somewhere to authenticate against once attempted.
+  enable_cluster_creator_admin_permissions = true
 
   eks_managed_node_groups = {
     default = {
@@ -36,9 +51,9 @@ module "eks" {
     }
   }
 
-  tags = {
-    Environment = var.environment
-  }
+  # No explicit tags block here - the aws provider's default_tags (provider.tf)
+  # already applies Environment (and Project/ManagedBy) to every resource
+  # this config creates, including this cluster.
 }
 
 # IRSA role for the AWS Load Balancer Controller (installed into the cluster

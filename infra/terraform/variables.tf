@@ -74,9 +74,19 @@ variable "node_group_desired_size" {
 }
 
 variable "db_engine_version" {
-  description = "PostgreSQL major version for RDS."
+  # Must stay a bare major version ("16"), not "16.4" - rds.tf derives both
+  # `family` ("postgres${var.db_engine_version}", which must be exactly
+  # "postgresNN", no minor component) and `major_engine_version` from this
+  # same value. A minor version here would make `family` invalid and fail
+  # apply.
+  description = "PostgreSQL major version for RDS (major version only, e.g. \"16\" - not \"16.4\")."
   type        = string
   default     = "16"
+
+  validation {
+    condition     = can(regex("^[0-9]+$", var.db_engine_version))
+    error_message = "db_engine_version must be a bare major version (e.g. \"16\"), not a minor version like \"16.4\" - it's used to build the RDS parameter group family name, which only accepts a major version."
+  }
 }
 
 variable "db_instance_class" {

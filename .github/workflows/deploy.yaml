@@ -33,11 +33,15 @@ permissions:
 
 jobs:
   terraform:
-    # Runs automatically on the merge-triggered path (workflow_run, after
-    # docker-publish succeeds) - newly merged code may depend on infra
-    # changes landing first. Skipped by default on a manual run; see the
-    # run_terraform input above.
-    if: github.event_name == 'workflow_run' || inputs.run_terraform == true
+    # Runs automatically on the merge-triggered path, but only when
+    # docker-publish actually succeeded - workflow_run fires on ANY
+    # conclusion (success, failure, cancelled), so checking event_name alone
+    # would run `terraform apply` against real AWS even when nothing new was
+    # built. Skipped by default on a manual run; see the run_terraform input
+    # above.
+    if: |
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      inputs.run_terraform == true
     uses: ./.github/workflows/terraform.yaml
     secrets: inherit
 
