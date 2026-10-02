@@ -1,0 +1,20 @@
+# Provider plugin cache / working directory. Large, machine-specific
+# binaries -- must never be committed.
+.terraform/
+
+# Generic Terraform crash/override artifacts.
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Plan output files, if anyone ever saves one locally.
+*.tfplan
+
+# NOTE: terraform.tfstate and terraform.tfstate.backup are intentionally
+# NOT ignored here. This bootstrap config's state is committed to the repo
+# on purpose -- see "Don't lose this state file" in README.md. Do not add
+# a blanket `*.tfstate` rule to this file; that would silently undo that
+# decision.
