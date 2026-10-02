@@ -13,14 +13,48 @@ on:
         description: "Image tag to deploy (e.g. sha-a1b2c3d)"
         required: true
         type: string
+      # Manual redeploys usually just re-apply an existing image to existing
+      # infra, so terraform.yaml is skipped by default on this path - opt in
+      # explicitly when a manual run also needs to provision/update AWS
+      # resources (e.g. applying a Terraform change outside the merge flow).
+      run_terraform:
+        description: "Also run terraform.yaml to provision/update AWS infra"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
+  # id-token: write is only actually used by terraform.yaml's OIDC step
+  # (see that file), but a reusable workflow called via `uses:` can't be
+  # granted a permission this caller workflow doesn't itself hold - so it
+  # has to be declared here too, not just in terraform.yaml.
+  id-token: write
 
 jobs:
+  terraform:
+    # Runs automatically on the merge-triggered path, but only when
+    # docker-publish actually succeeded - workflow_run fires on ANY
+    # conclusion (success, failure, cancelled), so checking event_name alone
+    # would run `terraform apply` against real AWS even when nothing new was
+    # built. Skipped by default on a manual run; see the run_terraform input
+    # above.
+    if: |
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      inputs.run_terraform == true
+    uses: ./.github/workflows/terraform.yaml
+    secrets: inherit
+
   deploy-dev:
-    # Only proceed on a successful upstream build, or any manual run.
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    # Only proceed on a successful upstream build, or any manual run. Also
+    # waits on the terraform job above - but that job is deliberately
+    # skipped on most manual runs (see its `if`), so a plain "skipped" result
+    # must still let this job proceed; only an actual terraform failure
+    # should block the deploy.
+    if: |
+      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success') &&
+      (needs.terraform.result == 'success' || needs.terraform.result == 'skipped')
+    needs: terraform
     runs-on: ubuntu-latest
     # Gates the job behind the dev GitHub Environment's requirements (e.g.
     # reviewers). No steps below run if the gate isn't passed.

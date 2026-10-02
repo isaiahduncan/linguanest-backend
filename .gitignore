@@ -36,3 +36,21 @@ target/
 .classpath
 .settings/
 .factorypath
+
+# Terraform - local provider/module cache and state. State itself lives in
+# the remote S3 backend (see infra/terraform/versions.tf), never committed;
+# .terraform.lock.hcl is the one Terraform file that *should* be committed,
+# so it's deliberately not listed here.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
